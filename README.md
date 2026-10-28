@@ -13,7 +13,7 @@ Application statique de test pour OCRiser les PDF, rechercher le texte et constr
 ## Index thématique
 - Rubriques proposées : essais de véhicules, circuits/voyages, dossiers, salons/expositions, réseaux/transports urbains, technique, actualités, portraits/interviews, marché de l’occasion/petites annonces et autre.
 - Les entrées sont filtrables par rubrique et recherchables par numéro, titre, véhicule, thème et notes.
-- Les pages de sommaire proposées automatiquement sont des candidates, pas une détection garantie. Les entrées doivent être vérifiées manuellement.
+- Les pages de sommaire proposées automatiquement sont des candidates, pas une détection garantie. L’extraction des titres et la suggestion de rubrique utilisent des règles heuristiques ; les pages imprimées et les intitulés doivent être vérifiés manuellement. Les propositions ne sont jamais marquées comme vérifiées automatiquement.
 - Les données sont stockées localement dans IndexedDB ; aucun PDF n’est envoyé à un serveur par cette application.
 
 ## Technologie et limites
