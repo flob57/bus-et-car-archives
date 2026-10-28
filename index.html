@@ -76,7 +76,19 @@ $("export").onclick=async()=>{let data={app:"Bus & Car Archives",version:2,expor
 $("import").onchange=async e=>{let f=e.target.files[0];if(!f)return;try{let d=JSON.parse(await f.text());if(!Array.isArray(d.pages))throw Error("Format non reconnu");for(let p of d.pages)if(p.id&&p.docId)await put(p);for(let e of (d.entries||[]))if(e.id&&e.title)await putEntry(e);await stats();await renderEntries();await refreshContentsPages();status("Import terminé : "+d.pages.length+" pages et "+(d.entries||[]).length+" entrées thématiques.")}catch(err){status("Import impossible : "+err.message)}e.target.value=""};
 function escapeText(s){return esc(s||"")}
 async function refreshContentsPages(){let pages=await all(),sel=$("contentsPage"),old=sel.value;let candidates=pages.filter(p=>p.pageNum<=8||/sommaire|table des mati[eè]res|dans ce num[eé]ro|au sommaire|contenu/i.test(p.text||""));candidates.sort((a,b)=>a.title.localeCompare(b.title,"fr",{numeric:true})||a.pageNum-b.pageNum);sel.innerHTML='<option value="">Choisir une page…</option>'+candidates.map(p=>`<option value="${esc(p.id)}">${esc(p.title)} — page PDF ${p.pageNum}${/sommaire|table des mati[eè]res|dans ce num[eé]ro|au sommaire/i.test(p.text||"")?' · mot-clé détecté':''}</option>`).join("");if([...sel.options].some(o=>o.value===old))sel.value=old;if(!candidates.length)$("contentsPreview").textContent="Aucune page indexée pour le moment. Analyse un PDF d’abord."}
-function guessCategory(title){let t=norm(title);if(/essai|au volant|pr100|autocar|autobus|vehicule|berliet|saviem|heuliez|renault|chassis|moteur/.test(t))return "Essai de véhicule";if(/salon|exposition|foire|mitcar|salon/.test(t))return "Salon / exposition";if(/circuit|voyage|portugal|saint.vincent|excursion|tourisme|caravelle|lourdes|dijon|arc.et.senans/.test(t))return "Circuit / voyage";if(/dossier|enquete|enquête|etude|étude/.test(t))return "Dossier";if(/transport urbain|reseau|réseau|ligne|dijon/.test(t))return "Réseau / transports urbains";if(/handicap|accessibilite|accessibilité|technique|moteur/.test(t))return "Technique";if(/actualite|actualité|courrier|editorial|éditorial|manifestation/.test(t))return "Actualités";if(/occasion|petites annonces|cote des cars/.test(t))return "Marché de l’occasion / petites annonces";return "Autre"}
+function guessCategory(title){
+ let t=norm(title);
+ // Les sujets de transport urbain priment sur les mots génériques « voyage » ou « tourisme ».
+ if(/traverser dijon|transport urbain|reseau|ligne urbaine|autobus urbain/.test(t))return "Réseau / transports urbains";
+ if(/salon|exposition|foire|mitcar/.test(t))return "Salon / exposition";
+ if(/essai|au volant|pr100|autocar|autobus|vehicule|berliet|saviem|heuliez|renault|chassis|moteur/.test(t))return "Essai de véhicule";
+ if(/dossier|enquete|etude/.test(t))return "Dossier";
+ if(/circuit|voyage|portugal|saint.vincent|excursion|tourisme|caravelle|lourdes|arc.et.senans|anvers/.test(t))return "Circuit / voyage";
+ if(/handicap|accessibilite|technique/.test(t))return "Technique";
+ if(/actualite|courrier|carnet|editorial|manifestation|calendrier|trois mois/.test(t))return "Actualités";
+ if(/occasion|petites annonces|cote des cars/.test(t))return "Marché de l’occasion / petites annonces";
+ return "Autre";
+}
 function proposeArticles(text){
  let raw=(text||"").replace(/\r/g,"\n").replace(/[\t ]+/g," ").replace(/\n{2,}/g,"\n").trim();
  raw=raw.replace(/B\s*\.\s*(?:et|&)\s*C\s*\./gi,"BC_ABBREV").replace(/M\s*\./g,"M_ABBREV").replace(/MM\s*\./g,"MM_ABBREV");
