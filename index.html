@@ -77,13 +77,13 @@ $("import").onchange=async e=>{let f=e.target.files[0];if(!f)return;try{let d=JS
 function escapeText(s){return esc(s||"")}
 async function refreshContentsPages(){let pages=await all(),sel=$("contentsPage"),old=sel.value;let candidates=pages.filter(p=>p.pageNum<=8||/sommaire|table des mati[eè]res|dans ce num[eé]ro|au sommaire|contenu/i.test(p.text||""));candidates.sort((a,b)=>a.title.localeCompare(b.title,"fr",{numeric:true})||a.pageNum-b.pageNum);sel.innerHTML='<option value="">Choisir une page…</option>'+candidates.map(p=>`<option value="${esc(p.id)}">${esc(p.title)} — page PDF ${p.pageNum}${/sommaire|table des mati[eè]res|dans ce num[eé]ro|au sommaire/i.test(p.text||"")?' · mot-clé détecté':''}</option>`).join("");if([...sel.options].some(o=>o.value===old))sel.value=old;if(!candidates.length)$("contentsPreview").textContent="Aucune page indexée pour le moment. Analyse un PDF d’abord."}
 function guessCategory(title){
- let t=norm(title);
- if(/le carnet de b|le courrier de b|les essais de b|les enquetes de b|le calendrier de b|hotellerie,? la selection|grand tourisme/.test(t))return "Rubrique récurrente";
+ let t=norm(title).replace(/[^a-z0-9]+/g," ").trim();
+ if(t.includes("le carnet de b") || t.includes("le courrier de b") || t.includes("les essais de b") || t.includes("les enquetes de b") || t.includes("le calendrier de b") || t.includes("hotellerie la selection"))return "Rubrique récurrente";
  if(/traverser dijon|transport urbain|reseau|ligne urbaine|autobus urbain/.test(t))return "Réseau / transports urbains";
  if(/salon|exposition|foire|mitcar/.test(t))return "Salon / exposition";
  if(/essai|au volant|pr100|autocar|autobus|vehicule|berliet|saviem|heuliez|renault|chassis|moteur/.test(t))return "Essai de véhicule";
  if(/dossier|enquete|etude|urbanisme/.test(t))return "Dossier";
- if(/circuit|voyage|aventure|portugal|saint.vincent|excursion|tourisme|caravelle|lourdes|arc.et.senans|anvers|musee/.test(t))return "Circuit / voyage";
+ if(/circuit|voyage|aventure|portugal|saint vincent|excursion|tourisme|caravelle|lourdes|arc et senans|anvers|musee/.test(t))return "Circuit / voyage";
  if(/handicap|accessibilite|technique/.test(t))return "Technique";
  if(/actualite|editorial|manifestation|calendrier|trois mois/.test(t))return "Actualités";
  if(/occasion|petites annonces|cote des cars/.test(t))return "Marché de l’occasion / petites annonces";
@@ -108,7 +108,7 @@ function proposeArticles(text){
   if(/^(?:et|ou|pour|dans|de|du|des|la pointe|la dou|cœur de|pour \d+ centimes|à la veille|la veille de)\b/i.test(chunk))continue;
   if(/\b(?:de|du|des|la|le|les|à|au|aux|et|pour|dans|en|sur|par|avec|l['’])$/i.test(chunk))continue;
   if(/^(?:n[°o]?\s*\d+|décembre|decembre|le mensuel|photo de couverture)/i.test(chunk))continue;
-  if(/^c.{0,2}est ici que limprimerie a conquis ses lettres de noblesse/i.test(norm(chunk)))continue;
+  if(/^c.?est ici que limprimerie a conquis ses lettres de noblesse/i.test(norm(chunk)))continue;
   if(/^(?:les essais de B\. et C\.|les enquêtes de B\. et C\.|le calendrier de B\. et C\.|grand tourisme\.?|hôtellerie\.?|le marché de l'occasion\.?|le marché de l’occasion\.?|les transports urbains\.?|le tourisme du mercredi\.?)$/i.test(chunk))continue;
   let key=norm(chunk).replace(/[^a-z0-9]+/g," ").trim();if(seen.has(key))continue;seen.add(key);
   out.push({title:chunk,category:guessCategory(chunk),startPage:"",endPage:"",entities:"",verified:false});
