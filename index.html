@@ -94,7 +94,7 @@ function proposeArticles(text){
  raw=raw.replace(/B\s*\.\s*(?:et|&)\s*C\s*\./gi,"BC_ABBREV").replace(/M\s*\./g,"M_ABBREV").replace(/MM\s*\./g,"MM_ABBREV");
  raw=raw.replace(/^.*?(?:mensuel du transport routier de voyageurs)/i," ");
  raw=raw.replace(/\b\d{1,3}(?:\s*[,;·-]?\s*\d{1,3}){2,}\b/g," ");
- const starts=["Editorial","Éditorial","Le carnet","Le courrier","Grand tourisme","L'aventure","L’aventure","Le Cap","La visite","Le tourisme","Pour les écoliers","C'est ici","C’est ici","Les transports urbains","Traverser Dijon","Le transport des handicapés","Les enquêtes","À Lourdes","A Lourdes","Le calendrier","Trois mois","Les essais","Les PR","Hôtellerie","Les hôtels","B. et C. à lu","Le marché de l'occasion","Le marché de l’occasion","La cote des cars","Petites annonces","Les salons","Au salon","Dossier","Enquête","Portrait","Technique","Nouveautés","Actualités"];
+ const starts=["Editorial","Éditorial","Le carnet","Le courrier","Grand tourisme","L'aventure","L’aventure","Le Cap","La visite","Le tourisme","la première tentative","à la veille","Le type même","Pour les écoliers","C'est ici","C’est ici","Les transports urbains","Traverser Dijon","Le transport des handicapés","Les enquêtes","À Lourdes","A Lourdes","Le calendrier","Trois mois","Les essais","Les PR","Hôtellerie","Les hôtels","B. et C. à lu","Le marché de l'occasion","Le marché de l’occasion","La cote des cars","Petites annonces","Les salons","Au salon","Dossier","Enquête","Portrait","Technique","Nouveautés","Actualités"];
  const escapeRe=x=>x.replace(/[.*+?^$()|[\]\\]/g,"\\$&");
  let pieces=[];
  const lines=raw.split(/\n+/).map(x=>x.trim()).filter(Boolean);
