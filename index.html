@@ -4,13 +4,13 @@
 <style>
 body{margin:0;background:#f4f6f8;color:#1c2833;font:16px system-ui,sans-serif}header{background:#18354f;color:white;padding:22px}main{max-width:950px;margin:20px auto;padding:0 14px;display:grid;gap:14px}.card{background:white;border:1px solid #d9e1e8;border-radius:14px;padding:16px}h1{margin:0 0 5px}h2{font-size:1.1rem;margin:0 0 12px}.muted{color:#637383;font-size:.9rem}button{border:0;border-radius:9px;background:#17577c;color:white;padding:10px 14px;font:inherit;cursor:pointer;margin:4px 4px 4px 0}button.secondary{background:#e6edf3;color:#1b3448}input[type=search]{width:min(100%,550px);padding:11px;border:1px solid #bbc8d3;border-radius:9px;font:inherit}progress{width:100%;height:14px}#status{white-space:pre-wrap;background:#f2f5f7;padding:10px;border-radius:8px;margin-top:10px}.result{border:1px solid #dbe3e9;border-radius:10px;padding:12px;margin-top:10px}.result h3{margin:0 0 7px;font-size:1rem}mark{background:#ffec99}.pill{display:inline-block;background:#e7f0f7;border-radius:20px;padding:3px 8px;font-size:.8rem;margin:2px}label{display:inline-flex;align-items:center;gap:6px;margin:7px 12px 7px 0}.hidden{display:none}.stats{display:flex;gap:20px;flex-wrap:wrap}.stats strong{font-size:1.3rem}details{margin-top:10px}footer{max-width:950px;margin:0 auto;padding:10px 16px 30px;color:#667}
 </style></head><body>
-<header><h1>🚌 Bus & Car Archives</h1><div>Prototype gratuit — OCR et recherche plein texte pour ta collection.</div><div style="font-size:12px;opacity:.8;margin-top:6px">Version de test : 2026-10-28.6</div></header>
+<header><h1>🚌 Bus & Car Archives</h1><div>Prototype gratuit — OCR et recherche plein texte pour ta collection.</div><div style="font-size:12px;opacity:.8;margin-top:6px">Version de test : 2026-10-28.7</div></header>
 <main>
 <section class="card"><h2>1. Importer des magazines</h2>
 <p class="muted">Sélectionne un ou plusieurs PDF depuis ton appareil ou iCloud Drive. Le traitement s’effectue dans le navigateur : les PDF ne sont pas envoyés par cette application à un serveur. Commence par un seul numéro.</p>
 <input id="files" type="file" accept="application/pdf,.pdf" multiple><br>
 <label><input id="force" type="checkbox"> Forcer l’OCR même si du texte existe</label>
-<label><input id="keywords" type="checkbox" checked> Générer des suggestions de mots-clés</label><br>
+<label><input id="keywords" type="checkbox" checked> Générer des suggestions de mots-clés</label><br><label><input id="resume" type="checkbox" checked> Ignorer les pages déjà indexées (reprise rapide)</label><br>
 <button id="run">Analyser les PDF</button><button id="stop" class="secondary" disabled>Arrêter après la page en cours</button>
 <progress id="progress" value="0" max="100"></progress><div id="status">En attente de fichiers.</div></section>
 <section class="card"><h2>2. Rechercher dans les numéros indexés</h2>
@@ -58,8 +58,8 @@ function keywords(s){let c={};for(let w of (s.match(/[A-Za-zÀ-ÖØ-öø-ÿ][A-Z
 function status(s){$("status").textContent=s}
 async function stats(){let a=await all();$("pages").textContent=a.length;$("docs").textContent=new Set(a.map(p=>p.docId)).size;$("terms").textContent=new Set(a.flatMap(p=>(p.keywords||[]).map(k=>norm(k.word)))).size}
 async function getWorker(){if(!worker){status("Chargement du moteur OCR français…");worker=await Tesseract.createWorker("fra",1,{logger:m=>{if(m.status==="recognizing text")status("OCR en cours : "+Math.round((m.progress||0)*100)+" % de la page")}})}return worker}
-async function processFile(f){let pdf=await pdfjsLib.getDocument({data:await f.arrayBuffer()}).promise,docId=f.name+"|"+f.size+"|"+f.lastModified,title=f.name.replace(/\\.pdf$/i,""),issue=(title.match(/(?:n[°o.]?\\s*)?(\\d{1,4})/i)||[])[1]||"";
-for(let n=1;n<=pdf.numPages;n++){if(stop)break;let p=await pdf.getPage(n),text="",source="Texte PDF";
+async function processFile(f){let existingIds=new Set((await all()).map(x=>x.id)),skipped=0,pdf=await pdfjsLib.getDocument({data:await f.arrayBuffer()}).promise,docId=f.name+"|"+f.size+"|"+f.lastModified,title=f.name.replace(/\\.pdf$/i,""),issue=(title.match(/(?:n[°o.]?\\s*)?(\\d{1,4})/i)||[])[1]||"";
+for(let n=1;n<=pdf.numPages;n++){if(stop)break;if($("resume").checked&&existingIds.has(docId+"|"+n)){skipped++;$("progress").value=Math.round(n/pdf.numPages*100);status(f.name+"\nPage "+n+" / "+pdf.numPages+" · déjà indexée, ignorée");continue}let p=await pdf.getPage(n),text="",source="Texte PDF";
 if(!$("force").checked){try{text=(await p.getTextContent()).items.map(x=>x.str).join(" ").replace(/\\s+/g," ").trim()}catch(e){}}
 if($("force").checked||text.replace(/\\s/g,"").length<25){source="OCR";let v=p.getViewport({scale:1.6}),c=document.createElement("canvas"),ctx=c.getContext("2d");c.width=Math.ceil(v.width);c.height=Math.ceil(v.height);await p.render({canvasContext:ctx,viewport:v}).promise;text=((await (await getWorker()).recognize(c)).data.text||"").replace(/\\s+/g," ").trim();c.width=c.height=1}
 await put({id:docId+"|"+n,docId,title,issueNumber:issue,pageNum:n,totalPages:pdf.numPages,fileName:f.name,text,source,keywords:$("keywords").checked?keywords(text):[],updatedAt:new Date().toISOString()});
