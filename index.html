@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Bus & Car Archives</title>
+<style>
+body{margin:0;background:#f4f6f8;color:#1c2833;font:16px system-ui,sans-serif}header{background:#18354f;color:white;padding:22px}main{max-width:950px;margin:20px auto;padding:0 14px;display:grid;gap:14px}.card{background:white;border:1px solid #d9e1e8;border-radius:14px;padding:16px}h1{margin:0 0 5px}h2{font-size:1.1rem;margin:0 0 12px}.muted{color:#637383;font-size:.9rem}button{border:0;border-radius:9px;background:#17577c;color:white;padding:10px 14px;font:inherit;cursor:pointer;margin:4px 4px 4px 0}button.secondary{background:#e6edf3;color:#1b3448}input[type=search]{width:min(100%,550px);padding:11px;border:1px solid #bbc8d3;border-radius:9px;font:inherit}progress{width:100%;height:14px}#status{white-space:pre-wrap;background:#f2f5f7;padding:10px;border-radius:8px;margin-top:10px}.result{border:1px solid #dbe3e9;border-radius:10px;padding:12px;margin-top:10px}.result h3{margin:0 0 7px;font-size:1rem}mark{background:#ffec99}.pill{display:inline-block;background:#e7f0f7;border-radius:20px;padding:3px 8px;font-size:.8rem;margin:2px}label{display:inline-flex;align-items:center;gap:6px;margin:7px 12px 7px 0}.hidden{display:none}.stats{display:flex;gap:20px;flex-wrap:wrap}.stats strong{font-size:1.3rem}details{margin-top:10px}footer{max-width:950px;margin:0 auto;padding:10px 16px 30px;color:#667}
+</style></head><body>
+<header><h1>🚌 Bus & Car Archives</h1><div>Prototype gratuit — OCR et recherche plein texte pour ta collection.</div></header>
+<main>
+<section class="card"><h2>1. Importer des magazines</h2>
+<p class="muted">Sélectionne un ou plusieurs PDF depuis ton appareil ou iCloud Drive. Le traitement s’effectue dans le navigateur : les PDF ne sont pas envoyés par cette application à un serveur. Commence par un seul numéro.</p>
+<input id="files" type="file" accept="application/pdf,.pdf" multiple><br>
+<label><input id="force" type="checkbox"> Forcer l’OCR même si du texte existe</label>
+<label><input id="keywords" type="checkbox" checked> Générer des suggestions de mots-clés</label><br>
+<button id="run">Analyser les PDF</button><button id="stop" class="secondary" disabled>Arrêter après la page en cours</button>
+<progress id="progress" value="0" max="100"></progress><div id="status">En attente de fichiers.</div></section>
+<section class="card"><h2>2. Rechercher dans les numéros indexés</h2>
+<input id="query" type="search" placeholder="Ex. Iliade, Renault FR1…"><button id="search">Rechercher</button><br>
+<label><input id="exact" type="checkbox"> Mot entier exact</label><div id="count" class="muted"></div><div id="results"></div></section>
+<section class="card"><h2>3. Sauvegarder l’index</h2>
+<div class="stats"><div><strong id="docs">0</strong><br><span class="muted">PDF indexés</span></div><div><strong id="pages">0</strong><br><span class="muted">Pages indexées</span></div><div><strong id="terms">0</strong><br><span class="muted">Mots-clés candidats</span></div></div>
+<button id="export">Exporter l’index JSON</button><label class="secondary" for="import" style="background:#e6edf3;padding:10px;border-radius:9px;cursor:pointer">Importer un index JSON</label><input id="import" class="hidden" type="file" accept=".json,application/json">
+<details><summary>Limites actuelles</summary><ul><li>L’index est conservé dans le navigateur de cet appareil. Exporter le JSON pour le sauvegarder ou le transférer vers un autre appareil.</li><li>Les PDF originaux ne sont pas copiés : garde-les dans iCloud Drive. Les résultats indiquent le numéro et la page mais l’ouverture directe du PDF sera ajoutée plus tard.</li><li>Les mots-clés sont des suggestions statistiques, pas une analyse IA. Les articles, thèmes et la synchronisation Notion ne sont pas encore intégrés.</li><li>PDF.js, Tesseract.js et le modèle OCR français sont chargés depuis Internet. Les pages sont traitées dans le navigateur.</li><li>Ne ferme pas l’onglet pendant le traitement. Fais régulièrement une sauvegarde JSON.</li></ul></details></section>
+</main><footer>Bus & Car Archives · prototype · ne téléverse pas tes PDF sur un serveur.</footer>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script><script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+<script>
+(()=>{const $=id=>document.getElementById(id);pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+const DB="bus-car-archives-v1",STORE="pages";let stop=false,worker=null;
+const stopwords=new Set("alors au aucun aussi autre avant avec avoir bon car ce ceci cela ces ceux chaque comme dans des du elle elles en encore est et eu fait fois font ici il ils je la le les leur lui ma mais mes mon même ni notre nous ou où par pas peut peu pour pourquoi quand que qui sa sans ses si son sont sous sur ta tandis tel tes ton tous tout très tu un une vos votre vous".split(/\s+/));
+const norm=s=>(s||"").toLocaleLowerCase("fr").normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+function db(){return new Promise((res,rej)=>{let r=indexedDB.open(DB,1);r.onupgradeneeded=()=>r.result.createObjectStore(STORE,{keyPath:"id"});r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)})}
+async function put(p){let d=await db();return new Promise((res,rej)=>{let t=d.transaction(STORE,"readwrite");t.objectStore(STORE).put(p);t.oncomplete=()=>{d.close();res()};t.onerror=()=>rej(t.error)})}
+async function all(){let d=await db();return new Promise((res,rej)=>{let r=d.transaction(STORE).objectStore(STORE).getAll();r.onsuccess=()=>{d.close();res(r.result||[])};r.onerror=()=>rej(r.error)})}
+function keywords(s){let c={};for(let w of (s.match(/[A-Za-zÀ-ÖØ-öø-ÿ][A-Za-zÀ-ÖØ-öø-ÿ0-9-]{2,}/g)||[])){let n=norm(w);if(!stopwords.has(n))c[w]=(c[w]||0)+1}return Object.entries(c).sort((a,b)=>b[1]-a[1]).slice(0,20).map(([word,count])=>({word,count}))}
+function status(s){$("status").textContent=s}
+async function stats(){let a=await all();$("pages").textContent=a.length;$("docs").textContent=new Set(a.map(p=>p.docId)).size;$("terms").textContent=new Set(a.flatMap(p=>(p.keywords||[]).map(k=>norm(k.word)))).size}
+async function getWorker(){if(!worker){status("Chargement du moteur OCR français…");worker=await Tesseract.createWorker("fra",1,{logger:m=>{if(m.status==="recognizing text")status("OCR en cours : "+Math.round((m.progress||0)*100)+" % de la page")}})}return worker}
+async function processFile(f){let pdf=await pdfjsLib.getDocument({data:await f.arrayBuffer()}).promise,docId=f.name+"|"+f.size+"|"+f.lastModified,title=f.name.replace(/\.pdf$/i,""),issue=(title.match(/(?:n[°o.]?\s*)?(\d{1,4})/i)||[])[1]||"";
+for(let n=1;n<=pdf.numPages;n++){if(stop)break;let p=await pdf.getPage(n),text="",source="Texte PDF";
+if(!$("force").checked){try{text=(await p.getTextContent()).items.map(x=>x.str).join(" ").replace(/\s+/g," ").trim()}catch(e){}}
+if($("force").checked||text.replace(/\s/g,"").length<25){source="OCR";let v=p.getViewport({scale:1.6}),c=document.createElement("canvas"),ctx=c.getContext("2d");c.width=Math.ceil(v.width);c.height=Math.ceil(v.height);await p.render({canvasContext:ctx,viewport:v}).promise;text=((await (await getWorker()).recognize(c)).data.text||"").replace(/\s+/g," ").trim();c.width=c.height=1}
+await put({id:docId+"|"+n,docId,title,issueNumber:issue,pageNum:n,totalPages:pdf.numPages,fileName:f.name,text,source,keywords:$("keywords").checked?keywords(text):[],updatedAt:new Date().toISOString()});
+$("progress").value=Math.round(n/pdf.numPages*100);status(f.name+"\nPage "+n+" / "+pdf.numPages+" · "+source+" · "+text.length+" caractères")}
+}
+$("run").onclick=async()=>{let fs=[...$("files").files];if(!fs.length){status("Sélectionne au moins un PDF.");return}stop=false;$("run").disabled=true;$("stop").disabled=false;try{for(let f of fs){if(stop)break;await processFile(f);await stats()}status(stop?"Traitement interrompu.":"Analyse terminée. Exporte l’index JSON pour le sauvegarder.")}catch(e){console.error(e);status("Erreur : "+e.message+"\nEssaie avec un PDF plus court.")}finally{$("run").disabled=false;$("stop").disabled=true;await stats()}};
+$("stop").onclick=()=>{stop=true;status("Arrêt demandé, la page en cours sera terminée.")};
+function snippet(t,q){let i=norm(t).indexOf(norm(q)),s=i<0?t.slice(0,220):t.slice(Math.max(0,i-90),Math.min(t.length,i+q.length+130));let safe=esc(s),needle=esc(q).replace(/[.*+?^${}()|[\]\\]/g,"\\$&");try{safe=safe.replace(new RegExp("("+needle+")","ig"),"<mark>$1</mark>")}catch(e){}return (i>90?"…":"")+safe+(i>=0&&i+q.length+130<t.length?"…":"")}
+async function search(){let q=$("query").value.trim();if(!q){$("count").textContent="Saisis un terme.";return}let a=await all(),nq=norm(q),re=$("exact").checked?new RegExp("(^|[^a-z0-9])"+nq.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")+"([^a-z0-9]|$)","i"):null,hits=a.filter(p=>re?re.test(norm(p.text)):norm(p.text).includes(nq)).sort((x,y)=>x.title.localeCompare(y.title,"fr",{numeric:true})||x.pageNum-y.pageNum);
+$("count").textContent=hits.length+" page(s) trouvée(s), dans "+new Set(hits.map(p=>p.docId)).size+" numéro(s).";
+$("results").innerHTML=hits.slice(0,250).map(p=>`<article class="result"><h3>${esc(p.title)} — page PDF ${p.pageNum}/${p.totalPages}</h3><span class="pill">${esc(p.source)}</span>${p.issueNumber?`<span class="pill">Numéro détecté : ${esc(p.issueNumber)}</span>`:""}<p>${snippet(p.text,q)}</p><details><summary>Mots-clés candidats</summary>${(p.keywords||[]).slice(0,15).map(k=>`<span class="pill">${esc(k.word)} (${k.count})</span>`).join(" ")||"Aucun"}</details><p class="muted">PDF original : ${esc(p.fileName)}. Ouvre ce fichier dans iCloud Drive pour consulter la page.</p></article>`).join("")||"Aucun résultat. Si c’est un scan, vérifie que l’OCR a été exécuté."}
+$("search").onclick=search;$("query").onkeydown=e=>{if(e.key==="Enter")search()};
+$("export").onclick=async()=>{let data={app:"Bus & Car Archives",version:1,exportedAt:new Date().toISOString(),pages:await all()},b=new Blob([JSON.stringify(data,null,2)],{type:"application/json"}),u=URL.createObjectURL(b),a=document.createElement("a");a.href=u;a.download="bus-car-archives-index.json";a.click();setTimeout(()=>URL.revokeObjectURL(u),3000)};
+$("import").onchange=async e=>{let f=e.target.files[0];if(!f)return;try{let d=JSON.parse(await f.text());if(!Array.isArray(d.pages))throw Error("Format non reconnu");for(let p of d.pages)if(p.id&&p.docId)await put(p);await stats();status("Import terminé : "+d.pages.length+" pages.")}catch(err){status("Import impossible : "+err.message)}e.target.value=""};
+stats().catch(()=>{});
+})();
+</script></body></html>
