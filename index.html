@@ -79,7 +79,7 @@ async function refreshContentsPages(){let pages=await all(),sel=$("contentsPage"
 function guessCategory(title){
  let t=norm(title);
  // Les intitulés éditoriaux permanents sont des rubriques, pas des articles autonomes.
- if(/^(le carnet|le courrier|les essais de b et c|les enquetes de b et c|le calendrier de b et c|hotellerie|grand tourisme)$/.test(t))return "Rubrique récurrente";
+ if(/^(le carnet|le courrier|les essais de b et c|les enquetes de b et c|le calendrier de b et c|hotellerie|grand tourisme)/.test(t))return "Rubrique récurrente";
  if(/traverser dijon|transport urbain|reseau|ligne urbaine|autobus urbain/.test(t))return "Réseau / transports urbains";
  if(/salon|exposition|foire|mitcar/.test(t))return "Salon / exposition";
  if(/essai|au volant|pr100|autocar|autobus|vehicule|berliet|saviem|heuliez|renault|chassis|moteur/.test(t))return "Essai de véhicule";
