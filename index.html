@@ -71,12 +71,6 @@ body{margin:0;background:#f4f6f8;color:#1c2833;font:16px system-ui,sans-serif}he
 <label><input id="entryVerified" type="checkbox"> J’ai vérifié cette entrée dans le PDF original</label><br>
 <button id="saveEntry">Ajouter à l’index</button><button id="clearEntry" class="secondary">Vider le formulaire</button>
 <hr style="border:0;border-top:1px solid #d9e1e8;margin:18px 0">
-<h2>Ajouter plusieurs articles en une fois</h2>
-<p class="muted">Pour gagner du temps sur les 374 numéros, colle ici plusieurs lignes depuis un tableur. Colonnes dans cet ordre, séparées par des tabulations : <strong>numéro · rubrique · titre · page début · page fin · véhicule/thème · notes</strong>. Une ligne par article. La rubrique doit correspondre à l’une des rubriques proposées plus haut. Les lignes sont prévisualisées avant enregistrement.</p>
-<textarea id="bulkEntries" rows="5" placeholder="02&#9;Essai de véhicule&#9;Les PR 100 Berliet du réseau lyonnais&#9;41&#9;44&#9;Berliet PR100&#9;À vérifier dans le PDF" style="display:block;width:100%;box-sizing:border-box;padding:10px;border:1px solid #bbc8d3;border-radius:8px;font:inherit"></textarea>
-<button id="previewBulk" class="secondary">Prévisualiser les lignes</button><button id="saveBulk">Importer les entrées valides</button>
-<div id="bulkPreview" class="result muted">Aucune ligne prévisualisée.</div>
-<hr style="border:0;border-top:1px solid #d9e1e8;margin:18px 0">
 <h2>Index par rubrique</h2><input id="entrySearch" type="search" placeholder="Filtrer les titres, numéros, modèles…"><select id="entryFilter" style="padding:10px;border:1px solid #bbc8d3;border-radius:9px;font:inherit"><option value="">Toutes les rubriques</option><option>Rubrique récurrente</option><option>Essai de véhicule</option><option>Circuit / voyage</option><option>Dossier</option><option>Salon / exposition</option><option>Réseau / transports urbains</option><option>Technique</option><option>Actualités</option><option>Portrait / interview</option><option>Marché de l’occasion / petites annonces</option><option>Autre</option></select>
 <div id="entryCount" class="muted"></div><div id="entryList"></div>
 </section>
